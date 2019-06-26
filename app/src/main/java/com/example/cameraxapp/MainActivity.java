@@ -35,11 +35,14 @@ import com.gun0912.tedpermission.TedPermission;
 import java.io.File;
 import java.util.List;
 
+import static android.os.Environment.getExternalStoragePublicDirectory;
+
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     private Preview mPreview;
     private TextureView textureView;
+    private String DIRECTORY_NAME = "CameraX";
     Button button;
 
     @Override
@@ -116,25 +119,41 @@ public class MainActivity extends AppCompatActivity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                File file = new File(Environment.getExternalStorageDirectory() + "/" + System.currentTimeMillis() + ".jpg");
-                imgCap.takePicture(file, new ImageCapture.OnImageSavedListener() {
-                    @Override
-                    public void onImageSaved(@NonNull File file) {
-                        String msg = "Photo capture succeeded: " + file.getAbsolutePath();
-                        Toast.makeText(getBaseContext(), msg, Toast.LENGTH_LONG).show();
-                    }
 
-                    @Override
-                    public void onError(@NonNull ImageCapture.UseCaseError useCaseError, @NonNull String message, @Nullable Throwable cause) {
-                        String msg = "Photo capture failed: " + message;
-                        Toast.makeText(getBaseContext(), msg, Toast.LENGTH_LONG).show();
-                        if (cause != null) {
-                            cause.printStackTrace();
+                try {
+                    File storageFolder = new File(Environment.getExternalStoragePublicDirectory(DIRECTORY_NAME).toString());
+
+                    if (!storageFolder.exists()) {
+                        if (!storageFolder.mkdirs()) {
+                            Log.e(TAG, "Failed to create directory");
                         }
                     }
-                });
+
+                    File file = new File(storageFolder.getPath() + File.separator
+                            + "IMG_" + System.currentTimeMillis() + ".jpg");
+                    imgCap.takePicture(file, new ImageCapture.OnImageSavedListener() {
+                        @Override
+                        public void onImageSaved(@NonNull File file) {
+                            String msg = "Photo capture succeeded: " + file.getAbsolutePath();
+                            Toast.makeText(getBaseContext(), msg, Toast.LENGTH_LONG).show();
+                        }
+
+                        @Override
+                        public void onError(@NonNull ImageCapture.UseCaseError useCaseError,
+                                            @NonNull String message, @Nullable Throwable cause) {
+                            String msg = "Photo capture failed: " + message;
+                            Toast.makeText(getBaseContext(), msg, Toast.LENGTH_LONG).show();
+                            if (cause != null) {
+                                cause.printStackTrace();
+                            }
+                        }
+                    });
+                } catch (Exception e) {
+                    Log.e(TAG, "onClick: " + e.getMessage());
+                }
             }
         });
+
     }
 
     void analyzeImage(final ImageCapture imgCap) {
@@ -151,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
                 });
 
         //bind to lifecycle:
-        CameraX.bindToLifecycle((LifecycleOwner) this, analysis, imgCap, mPreview);
+        CameraX.bindToLifecycle(this, analysis, imgCap, mPreview);
     }
 
 
